@@ -80,7 +80,7 @@ class Asset_Instance extends \Fuel\Core\Asset_Instance
 		{	
 			$file_last_modified = filemtime($file);
 			
-			if ($file_last_modified > $last_modified) $last_mofidied = $file_last_modified;
+			if ($file_last_modified > $last_modified) $last_modified = $file_last_modified;
 		}
 		
 		$combination_name = md5(implode('', $files) . $last_modified);
