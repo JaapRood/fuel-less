@@ -44,35 +44,64 @@ class Asset_Instance extends \Fuel\Core\Asset_Instance
 			$stylesheets = array($stylesheets);
 		}
 		
-		foreach($stylesheets as &$lessfile)
-		{
-			$source_less  = \Config::get('asset.less_source_dir').$lessfile;
+		foreach ($stylesheets as &$less_file) {
+			$less_file = \Config::get('asset.less_source_dir').$less_file;
 			
-			if( ! is_file($source_less))
+			if( ! is_file($less_file))
 			{
-				throw new \Fuel_Exception('Could not find less source file: '.$source_less);
-			}
-			
-			// Change the name for loading with Asset::css
-			$lessfile = str_replace('.'.pathinfo($lessfile, PATHINFO_EXTENSION), '', $lessfile).'.css';
-			
-			// Full path to css compiled file
-			$compiled_css = \Config::get('asset.less_output_dir').$lessfile;
-			
-			// Compile only if source is newer than compiled file
-			if ( ! is_file($compiled_css) or filemtime($source_less) > filemtime($compiled_css))
-			{
-				require_once PKGPATH.'less'.DS.'vendor'.DS.'lessphp'.DS.'lessc.inc.php';
-				
-				$handle = new \lessc($source_less);
-				$handle->indentChar = \Config::get('asset.indent_with');
-				
-				$compile_path = dirname($compiled_css);
-				$css_name     = pathinfo($compiled_css, PATHINFO_BASENAME);
-				\File::update($compile_path, $css_name, $handle->parse());
+				throw new \Fuel_Exception('Could not find less source file: '.$less_file);
 			}
 		}
 		
-		return static::css($stylesheets, $attr, $group, $raw);
+		$combined_result = static::combine_less($stylesheets);
+		$combined_less = $combined_result['content'];
+		$css_file_name = $combined_result['name'] . '.css';
+		$css_file_path = \Config::get('asset.less_output_dir') . $css_file_name;
+		
+		if (! is_file($css_file_path) ) // if the combined file has never been compiled yet
+		{ 
+			require_once PKGPATH.'less'.DS.'vendor'.DS.'lessphp'.DS.'lessc.inc.php';
+				
+			$handle = new \lessc();
+			$handle->indentChar = \Config::get('asset.indent_with');
+			
+			$compile_path = dirname($css_file_path);
+			
+			\File::create($compile_path, $css_file_name, $handle->parse($combined_less));
+		}
+		
+		return static::css($css_file_name, $attr, $group, $raw);
+	}
+	
+	protected function combine_less(array $files) {
+		$last_modified = 0;
+		
+		foreach ($files as $file)
+		{	
+			$file_last_modified = filemtime($file);
+			
+			if ($file_last_modified > $last_modified) $last_mofidied = $file_last_modified;
+		}
+		
+		$combination_name = md5(implode('', $files) . $last_modified);
+		
+		
+		try
+		{
+			$combined_content = \Cache::get($combination_name);
+		}
+		catch (\CacheNotFoundException $e)
+		{
+			$combined_content = '';
+			
+			foreach ($files as $file)
+			{
+				$combined_content .= file_get_contents($file).PHP_EOL;
+			}
+			
+			\Cache::set($combination_name, $combined_content, \Config::get('asset.less_combined_cache_expiration'));
+		}
+		
+		return array('name' => $combination_name, 'content' => $combined_content);
 	}
 }

@@ -28,7 +28,9 @@ return array(
 	 *
 	 * Default: APPPATH.'vendor/less/'
 	 */
-	'less_source_dir' => APPPATH.'vendor/less/',
+	'less_source_dir' => APPPATH.'less/',
+	
+	'less_combined_cache_expiration' => null,
 	
 	/**
 	 * As the asset config is a array with multiple paths, you must tell
