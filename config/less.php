@@ -19,8 +19,13 @@
  * This will allow you to upgrade fuel without losing your custom config.
  */
 
-return array(
+$default_dir = \Config::get('asset.paths.0');
+$cache_dir = $default_dir . 'cache/';
 
+return array(
+	
+	'paths' => array_merge(\Config::get('asset.paths'), array($cache_dir)),
+	
 	/**
 	 * An array of paths that will be searched for lesscss assets.
 	 * You should probably keep them out of public access
@@ -41,5 +46,5 @@ return array(
 	 *
 	 * Default: Config::get('asset.paths.0').Config::get('asset.css_dir'),
 	 */
-	'less_output_dir' => Config::get('asset.paths.0').Config::get('asset.css_dir'),
+	'less_output_dir' => $cache_dir.Config::get('asset.css_dir'),
 );
